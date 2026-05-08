@@ -1,9 +1,9 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, CreateDateColumn, UpdateDateColumn, ObjectIdColumn, ObjectId } from 'typeorm';
 
 @Entity('dachalar')
 export class Dacha {
-  @PrimaryColumn()
-  id: string;
+  @ObjectIdColumn()
+  id: ObjectId;
 
   @Column()
   dachaName: string;

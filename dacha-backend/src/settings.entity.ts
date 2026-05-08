@@ -1,8 +1,11 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, Column, ObjectIdColumn, ObjectId } from 'typeorm';
 
 @Entity('settings')
 export class Settings {
-  @PrimaryColumn()
+  @ObjectIdColumn()
+  _id: ObjectId;
+
+  @Column()
   id: string; // 'current'
 
   @Column({ default: 'Dacha Tour' })

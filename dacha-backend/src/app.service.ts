@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ObjectId } from 'typeorm';
 import { Dacha } from './dacha.entity';
 import { User } from './user.entity';
 import { Settings } from './settings.entity';
@@ -367,7 +367,7 @@ ${locationLink}
   }
 
   async update(id: string, data: any): Promise<void> {
-    const oldDacha = await this.dachaRepository.findOne({ where: { id: id } });
+    const oldDacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(id) as any } });
     const oldCalendar = oldDacha ? JSON.parse(oldDacha.calendar) : {};
 
     const dachaName = data.owner?.dachaName || data.dachaName;
@@ -380,7 +380,7 @@ ${locationLink}
     const calendar = data.calendar;
     const amenities = data.amenities;
 
-    await this.dachaRepository.update(id, {
+    await this.dachaRepository.update(new ObjectId(id) as any, {
       dachaName,
       ownerName,
       ownerSurname,
@@ -401,7 +401,7 @@ ${locationLink}
       );
 
       if (wasJustBooked) {
-        const updatedDacha = await this.dachaRepository.findOne({ where: { id: id } });
+        const updatedDacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(id) as any } });
         if (updatedDacha) {
           await this.sendDachaToChannel(updatedDacha, 'booking');
         }
@@ -410,7 +410,7 @@ ${locationLink}
   }
 
   async remove(id: string): Promise<void> {
-    await this.dachaRepository.delete(id);
+    await this.dachaRepository.delete(new ObjectId(id) as any);
   }
 
   @Cron('0 0 9,12,17,18,19 * * *')
@@ -458,7 +458,7 @@ ${locationLink}
   }
 
   async updateDachaStory(id: string, storyUrl: string): Promise<Dacha> {
-    const dacha = await this.dachaRepository.findOne({ where: { id } });
+    const dacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(id) as any } });
     if (!dacha) throw new Error('Dacha not found');
     dacha.storyUrl = storyUrl;
     return this.dachaRepository.save(dacha);
@@ -614,7 +614,7 @@ ${locationLink}
   }
 
   async toggleStoryLike(dachaId: string, phone: string): Promise<any> {
-    const dacha = await this.dachaRepository.findOne({ where: { id: dachaId } });
+    const dacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(dachaId) as any } });
     if (!dacha) throw new Error('Dacha topilmadi');
 
     let likes: string[] = [];
@@ -633,7 +633,7 @@ ${locationLink}
   }
 
   async addReview(dachaId: string, phone: string, rating: number, text: string): Promise<any> {
-    const dacha = await this.dachaRepository.findOne({ where: { id: dachaId } });
+    const dacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(dachaId) as any } });
     if (!dacha) throw new Error('Dacha topilmadi');
 
     let reviews: any[] = [];
@@ -657,7 +657,7 @@ ${locationLink}
   }
 
   async deleteReview(id: string, index: number): Promise<any> {
-    const dacha = await this.dachaRepository.findOne({ where: { id } });
+    const dacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(id) as any } });
     if (!dacha) return null;
 
     let reviews: any[] = [];

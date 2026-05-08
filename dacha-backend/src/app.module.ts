@@ -11,7 +11,14 @@ import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     TypeOrmModule.forRoot(
-      process.env.DATABASE_URL
+      process.env.MONGO_URI
+        ? {
+            type: 'mongodb',
+            url: process.env.MONGO_URI,
+            entities: [Dacha, User, Settings, Booking],
+            synchronize: true,
+          }
+        : process.env.DATABASE_URL
         ? {
             type: 'postgres',
             url: process.env.DATABASE_URL,
