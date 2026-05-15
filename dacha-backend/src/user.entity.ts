@@ -1,9 +1,9 @@
-import { Entity, Column, ObjectIdColumn, ObjectId } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class User {
-  @ObjectIdColumn()
-  id: ObjectId;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column()
   name: string;
@@ -23,6 +23,12 @@ export class User {
   @Column({ type: 'text', nullable: true })
   avatarUrl: string | null;
 
+  @Column({ default: 'buyer' })
+  role: string; // 'buyer' or 'seller'
+
   @Column({ default: false })
   isVerified: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  storyUrl: string | null;
 }

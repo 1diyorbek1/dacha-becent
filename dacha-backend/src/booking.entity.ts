@@ -1,9 +1,9 @@
-import { Entity, Column, CreateDateColumn, ObjectIdColumn, ObjectId } from 'typeorm';
+import { Entity, Column, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('bookings')
 export class Booking {
-  @ObjectIdColumn()
-  id: ObjectId;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column()
   dachaId: string;

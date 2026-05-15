@@ -56,8 +56,8 @@ export class AppController {
   }
 
   @Post('api/dachalar/auth/request-code')
-  requestCode(@Body() body: { name: string, surname: string, phone: string }) {
-    return this.appService.requestCode(body.name, body.surname, body.phone);
+  requestCode(@Body() body: { name: string, surname: string, phone: string, role: string }) {
+    return this.appService.requestCode(body.name, body.surname, body.phone, body.role);
   }
 
   @Post('api/dachalar/auth/verify-code')

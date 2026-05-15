@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ObjectId } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Dacha } from './dacha.entity';
 import { User } from './user.entity';
 import { Settings } from './settings.entity';
@@ -10,7 +10,7 @@ import { Cron } from '@nestjs/schedule';
 import FormData = require('form-data');
 
 @Injectable()
-export class AppService {
+export class AppService implements OnModuleInit {
   constructor(
     @InjectRepository(Dacha)
     private dachaRepository: Repository<Dacha>,
@@ -21,6 +21,16 @@ export class AppService {
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
   ) {}
+
+  async onModuleInit() {
+    try {
+      const settings = await this.getSettings();
+      await axios.get(`https://api.telegram.org/bot${settings.botToken}/deleteWebhook`);
+    } catch (e) {
+      // Ignore errors if no webhook was set
+    }
+    this.pollTelegramUpdates();
+  }
 
   private lastUpdateId = 0;
 
@@ -99,7 +109,7 @@ export class AppService {
         }
       }
     } catch (e) {
-      // Silent fail - polling will retry in 3s
+      console.error('Polling error:', e.message, e.response?.data);
     }
   }
 
@@ -185,20 +195,38 @@ export class AppService {
     return { ok: true };
   }
 
-  async requestCode(name: string, surname: string, phone: string): Promise<{ success: boolean; message: string }> {
+  async requestCode(name: string, surname: string, phone: string, role: string = 'buyer'): Promise<{ success: boolean; message: string }> {
     // 1. Generate 6-digit random code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
     // 2. Find or Create User & save code
     let user = await this.userRepository.findOne({ where: { phone } });
+    const isNewUser = !user;
+
     if (!user) {
-      user = this.userRepository.create({ name, surname, phone });
+      user = this.userRepository.create({ name, surname, phone, role });
     } else {
       user.name = name;
       user.surname = surname;
+      user.role = role;
     }
     user.verificationCode = code;
     await this.userRepository.save(user);
+
+    // Notify Admin about new registration or role update
+    try {
+      const settings = await this.getSettings();
+      const roleText = role === 'seller' ? '🏘 Sotuvchi' : '🛒 Sotib oluvchi';
+      const statusText = isNewUser ? '🆕 Yangi ro\'yxatdan o\'tish' : '🔄 Profil yangilandi';
+      
+      await axios.post(`https://api.telegram.org/bot${settings.botToken}/sendMessage`, {
+        chat_id: settings.adminChatId,
+        text: `👤 *${statusText}*\n\n👤 Ism: ${name} ${surname}\n📞 Tel: ${phone}\n🎭 Rol: *${roleText}*\n\n#foydalanuvchi`,
+        parse_mode: 'Markdown',
+      });
+    } catch (e) {
+      console.error('Admin notification error:', e.message);
+    }
 
     // 3. If user already linked their Telegram - send code immediately
     if (user.chatId) {
@@ -367,7 +395,7 @@ ${locationLink}
   }
 
   async update(id: string, data: any): Promise<void> {
-    const oldDacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(id) as any } });
+    const oldDacha = await this.dachaRepository.findOne({ where: { id: Number(id) as any } });
     const oldCalendar = oldDacha ? JSON.parse(oldDacha.calendar) : {};
 
     const dachaName = data.owner?.dachaName || data.dachaName;
@@ -380,7 +408,7 @@ ${locationLink}
     const calendar = data.calendar;
     const amenities = data.amenities;
 
-    await this.dachaRepository.update(new ObjectId(id) as any, {
+    await this.dachaRepository.update(Number(id), {
       dachaName,
       ownerName,
       ownerSurname,
@@ -401,7 +429,7 @@ ${locationLink}
       );
 
       if (wasJustBooked) {
-        const updatedDacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(id) as any } });
+        const updatedDacha = await this.dachaRepository.findOne({ where: { id: Number(id) as any } });
         if (updatedDacha) {
           await this.sendDachaToChannel(updatedDacha, 'booking');
         }
@@ -410,7 +438,7 @@ ${locationLink}
   }
 
   async remove(id: string): Promise<void> {
-    await this.dachaRepository.delete(new ObjectId(id) as any);
+    await this.dachaRepository.delete(Number(id));
   }
 
   @Cron('0 0 9,12,17,18,19 * * *')
@@ -458,7 +486,7 @@ ${locationLink}
   }
 
   async updateDachaStory(id: string, storyUrl: string): Promise<Dacha> {
-    const dacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(id) as any } });
+    const dacha = await this.dachaRepository.findOne({ where: { id: Number(id) as any } });
     if (!dacha) throw new Error('Dacha not found');
     dacha.storyUrl = storyUrl;
     return this.dachaRepository.save(dacha);
@@ -614,7 +642,7 @@ ${locationLink}
   }
 
   async toggleStoryLike(dachaId: string, phone: string): Promise<any> {
-    const dacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(dachaId) as any } });
+    const dacha = await this.dachaRepository.findOne({ where: { id: Number(dachaId) as any } });
     if (!dacha) throw new Error('Dacha topilmadi');
 
     let likes: string[] = [];
@@ -633,7 +661,7 @@ ${locationLink}
   }
 
   async addReview(dachaId: string, phone: string, rating: number, text: string): Promise<any> {
-    const dacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(dachaId) as any } });
+    const dacha = await this.dachaRepository.findOne({ where: { id: Number(dachaId) as any } });
     if (!dacha) throw new Error('Dacha topilmadi');
 
     let reviews: any[] = [];
@@ -657,7 +685,7 @@ ${locationLink}
   }
 
   async deleteReview(id: string, index: number): Promise<any> {
-    const dacha = await this.dachaRepository.findOne({ where: { id: new ObjectId(id) as any } });
+    const dacha = await this.dachaRepository.findOne({ where: { id: Number(id) as any } });
     if (!dacha) return null;
 
     let reviews: any[] = [];

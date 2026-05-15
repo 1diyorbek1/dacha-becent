@@ -732,7 +732,52 @@ input:focus {
   }
 
   .user-info h1 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
+    justify-content: center;
+  }
+
+  .user-info .phone {
+    justify-content: center;
+  }
+
+  /* Seller dashboard header stacking */
+  .seller-dashboard > div:first-child {
+    flex-direction: column !important;
+    gap: 15px;
+    align-items: flex-start !important;
+  }
+
+  .seller-dashboard .btn-primary {
+    width: 100% !important;
+  }
+
+  /* Cabinet dacha items optimization */
+  .seller-dashboard .card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+    padding: 20px !important;
+  }
+
+  .seller-dashboard .card img {
+    width: 100% !important;
+    height: 180px !important;
+    border-radius: 15px !important;
+  }
+
+  .seller-dashboard .card > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 15px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .btn-icon {
+    width: 45px !important;
+    height: 45px !important;
+    background: #f8fafc !important;
+    border-radius: 12px !important;
   }
 
   .view-dachas-page header h2 {
@@ -764,14 +809,67 @@ input:focus {
   table {
     min-width: 600px;
   }
+
+  /* Landing Page Hero Fixes */
+  .landing-page section:first-child {
+    padding: 40px 15px !important;
+    margin-bottom: 30px !important;
+  }
+
+  .landing-page h1 {
+    font-size: 2.2rem !important;
+  }
+
+  .landing-page p {
+    font-size: 1rem !important;
+  }
+
+  /* Form Layout Fixes */
+  .owner-form {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+  }
+
+  .btn-primary {
+    padding: 16px 20px !important;
+    font-size: 1rem !important;
+  }
+
+  /* Fix for Photo Upload Slots */
+  .photo-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Modal responsiveness */
+  .modal-overlay .card {
+    padding: 25px 20px !important;
+    width: 95% !important;
+    max-width: none !important;
+  }
+
+  .modal-overlay h3 {
+    font-size: 1.4rem !important;
+  }
 }
 
 @media (max-width: 480px) {
-  nav.main-nav {
-    border-radius: 15px;
-  }
-
   .nav-link {
     font-size: 0.7rem;
+  }
+
+  .bottom-nav {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+  }
+
+  .day-box {
+    min-height: 70px;
+    padding: 6px;
+  }
+
+  .day-number {
+    font-size: 0.85rem;
   }
 }

@@ -52,10 +52,12 @@ function AppHeader({ settings }) {
             <LayoutGrid size={18} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
             Browse
           </NavLink>
-          <NavLink to="/add" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <PlusCircle size={18} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
-            Add
-          </NavLink>
+          {user?.role === 'seller' && (
+            <NavLink to="/add" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <PlusCircle size={18} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
+              Add
+            </NavLink>
+          )}
           <NavLink to="/cabinet" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <UserCircle size={18} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
             Cabinet
@@ -81,6 +83,7 @@ function AppHeader({ settings }) {
 function BottomNav() {
   const location = useLocation();
   const isLanding = location.pathname === '/';
+  const user = JSON.parse(localStorage.getItem('user'));
   if (isLanding) return null;
 
   return (
@@ -93,10 +96,12 @@ function BottomNav() {
         <LayoutGrid size={24} />
         <span>Dachalar</span>
       </NavLink>
-      <NavLink to="/add" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-        <PlusCircle size={24} />
-        <span>Qo'shish</span>
-      </NavLink>
+      {user?.role === 'seller' && (
+        <NavLink to="/add" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <PlusCircle size={24} />
+          <span>Qo'shish</span>
+        </NavLink>
+      )}
       <NavLink to="/cabinet" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
         <UserCircle size={24} />
         <span>Profil</span>

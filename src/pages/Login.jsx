@@ -10,7 +10,8 @@ function Login() {
     name: '',
     surname: '',
     phone: '+998',
-    code: ''
+    code: '',
+    role: 'buyer' // Default role
   });
 
   const navigate = useNavigate();
@@ -30,7 +31,8 @@ function Login() {
       const res = await api.post('/api/dachalar/auth/request-code', {
         name: formData.name,
         surname: formData.surname,
-        phone: formData.phone
+        phone: formData.phone,
+        role: formData.role || 'buyer'
       });
 
       if (res.data.success) {
@@ -130,6 +132,68 @@ function Login() {
                 setFormData({...formData, phone: val});
               }}
             />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '25px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: '700', color: 'var(--primary)' }}>
+               Hisob turi
+            </label>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 1fr', 
+              gap: '10px',
+              padding: '5px',
+              background: '#f1f5f9',
+              borderRadius: '16px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, role: 'buyer'})}
+                style={{
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s ease',
+                  background: formData.role === 'buyer' ? 'white' : 'transparent',
+                  color: formData.role === 'buyer' ? 'var(--primary)' : '#64748b',
+                  boxShadow: formData.role === 'buyer' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                🛒 Sotib oluvchi
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, role: 'seller'})}
+                style={{
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s ease',
+                  background: formData.role === 'seller' ? 'white' : 'transparent',
+                  color: formData.role === 'seller' ? 'var(--primary)' : '#64748b',
+                  boxShadow: formData.role === 'seller' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                🏘 Sotuvchi
+              </button>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '8px', textAlign: 'center' }}>
+              {formData.role === 'seller' ? 'Dacha quyish va boshqarish uchun' : 'Dachalarni ko\'rish va band qilish uchun'}
+            </p>
           </div>
           <div style={{
             background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
