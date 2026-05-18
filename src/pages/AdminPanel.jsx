@@ -17,6 +17,7 @@ function AdminPanel() {
     botToken: '',
     channelId: '',
     adminChatId: '',
+    channelLink: '',
     holidayMode: 'none',
     holidayText: ''
   });
@@ -448,6 +449,15 @@ function AdminPanel() {
                     value={settings.adminChatId}
                     onChange={(e) => setSettings({...settings, adminChatId: e.target.value})}
                     placeholder="Shaxsiy ID nima uchun"
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ fontWeight: '600', display: 'block', marginBottom: '8px' }}>Kanal Linki</label>
+                  <input 
+                    type="text" 
+                    value={settings.channelLink}
+                    onChange={(e) => setSettings({...settings, channelLink: e.target.value})}
+                    placeholder="Masalan: https://t.me/..."
                   />
                 </div>
               </div>

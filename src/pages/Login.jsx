@@ -16,15 +16,22 @@ function Login() {
 
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1); // 1: Info, 2: BotGuide
+  const [step, setStep] = useState(1); // 1: Info, 2: MandatorySub, 3: BotGuide/Code
   const [botRedirect, setBotRedirect] = useState(false);
+  const [settings, setSettings] = useState(null);
+
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data } = await api.get('/api/dachalar/settings');
+        setSettings(data);
+      } catch (e) {}
+    };
+    fetchSettings();
+  }, []);
 
   const handleRequestCode = async (e) => {
-    e.preventDefault();
-    if (!formData.phone.startsWith('+')) {
-      toast.error('Telefon raqamni + belgi bilan boshlang (masalan: +99890...)');
-      return;
-    }
+    if (e) e.preventDefault();
     
     setLoading(true);
     try {
@@ -41,7 +48,7 @@ function Login() {
         } else {
           toast.success(res.data.message);
         }
-        setStep(2);
+        setStep(3);
       } else {
         toast.error(res.data.message, { duration: 6000 });
       }
@@ -50,6 +57,14 @@ function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkAndProceed = async () => {
+    if (!formData.phone.startsWith('+')) {
+      toast.error('Telefon raqamni + belgi bilan boshlang (masalan: +99890...)');
+      return;
+    }
+    setStep(2); // Show mandatory sub step for everyone
   };
 
   const handleVerifyCode = async (e) => {
@@ -222,10 +237,75 @@ function Login() {
               </a>
             </div>
           </div>
-          <button className="btn-primary" type="submit" disabled={loading}>
+          <button 
+            className="btn-primary" 
+            type="button" 
+            disabled={loading}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!formData.name || !formData.surname || formData.phone.length < 13) {
+                toast.error('Iltimos, barcha maydonlarni to\'ldiring!');
+                return;
+              }
+              checkAndProceed();
+            }}
+          >
             {loading ? 'Yuborilmoqda...' : <><Send size={20} /> Kodni olish</>}
           </button>
         </form>
+      ) : step === 2 ? (
+        <div style={{ textAlign: 'center' }}>
+           <div style={{ 
+             background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+             border: '2px solid #7dd3fc',
+             borderRadius: '24px',
+             padding: '30px',
+             marginBottom: '25px'
+           }}>
+             <div style={{ background: '#0284c7', color: 'white', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 20px rgba(2,132,199,0.3)' }}>
+               <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
+                 <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/>
+               </svg>
+             </div>
+             <h3 style={{ color: '#0369a1', fontWeight: '800', marginBottom: '10px' }}>Majburiy obuna!</h3>
+             <p style={{ color: '#0c4a6e', fontSize: '0.95rem', lineHeight: '1.6' }}>
+               Kodni olishdan avval bizning rasmiy kanalimizga a'zo bo'lishingiz shart.
+             </p>
+           </div>
+
+           <a 
+             href={settings?.channelLink || 'https://t.me/+5AuXHINaqNBjZjM6'} 
+             target="_blank" 
+             rel="noreferrer" 
+             className="btn-primary" 
+             style={{ 
+               background: 'linear-gradient(135deg, #0284c7, #0369a1)', 
+               textDecoration: 'none', 
+               marginBottom: '15px',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               gap: '10px'
+             }}
+           >
+             📢 Kanalga obuna bo'lish
+           </a>
+
+           <button 
+             onClick={handleRequestCode}
+             className="btn-primary" 
+             style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}
+           >
+             Kanalga a'zo bo'ldim, davom etish ➜
+           </button>
+
+           <button 
+             onClick={() => setStep(1)}
+             style={{ background: 'none', border: 'none', color: '#94a3b8', marginTop: '15px', cursor: 'pointer', fontSize: '0.9rem' }}
+           >
+             Orqaga qaytish
+           </button>
+        </div>
       ) : (
         <div>
           {/* Bot instruction guide */}

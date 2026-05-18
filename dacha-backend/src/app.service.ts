@@ -85,18 +85,33 @@ export class AppService implements OnModuleInit {
             matchedUser.chatId = chatId;
             await this.userRepository.save(matchedUser);
 
-            if (matchedUser.verificationCode) {
-              await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                chat_id: chatId,
-                text: `✅ *Dacha Tour* ✅ tasdiqlash kodi:\n\n*${matchedUser.verificationCode}*\n\nUshbu kodni saytga kiriting.`,
-                parse_mode: 'Markdown',
-                reply_markup: { remove_keyboard: true }
-              });
+            const { isSubscribed } = await this.checkSubscription(matchedUser.phone);
+
+            if (isSubscribed) {
+              if (matchedUser.verificationCode) {
+                await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `✅ *Dacha Tour* ✅ tasdiqlash kodingiz:\n\n*${matchedUser.verificationCode}*\n\nUshbu kodni saytga kiriting.`,
+                  parse_mode: 'Markdown',
+                  reply_markup: { remove_keyboard: true }
+                });
+              } else {
+                await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  chat_id: chatId,
+                  text: '✅ Raqamingiz saqlandi! Endi saytda kod so\'rang.',
+                  reply_markup: { remove_keyboard: true }
+                });
+              }
             } else {
               await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 chat_id: chatId,
-                text: '✅ Raqamingiz saqlandi! Endi saytda kod so\'rang.',
-                reply_markup: { remove_keyboard: true }
+                text: `⚠️ *Diqqat!* Siz hali kanalimizga a'zo emassiz.\n\nKodni olish uchun avval quyidagi kanalga obuna bo'ling:\n${settings.channelLink || 'https://t.me/+5AuXHINaqNBjZjM6'}\n\nObuna bo'lgach, qaytadan telefon raqamingizni ulashing:`,
+                parse_mode: 'Markdown',
+                reply_markup: {
+                  keyboard: [[{ text: '📱 Telefon raqamimni ulashish', request_contact: true }]],
+                  resize_keyboard: true,
+                  one_time_keyboard: true
+                }
               });
             }
           } else {
@@ -168,18 +183,33 @@ export class AppService implements OnModuleInit {
         matchedUser.chatId = chatId;
         await this.userRepository.save(matchedUser);
 
-        if (matchedUser.verificationCode) {
-          await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            chat_id: chatId,
-            text: `✅ Tasdiqlash kodingiz:\n\n🔢 \`${matchedUser.verificationCode}\`\n\nUshbu kodni saytga kiriting.`,
-            parse_mode: 'Markdown',
-            reply_markup: { remove_keyboard: true }
-          });
+        const { isSubscribed } = await this.checkSubscription(matchedUser.phone);
+
+        if (isSubscribed) {
+          if (matchedUser.verificationCode) {
+            await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              chat_id: chatId,
+              text: `✅ Tasdiqlash kodingiz:\n\n🔢 \`${matchedUser.verificationCode}\`\n\nUshbu kodni saytga kiriting.`,
+              parse_mode: 'Markdown',
+              reply_markup: { remove_keyboard: true }
+            });
+          } else {
+            await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              chat_id: chatId,
+              text: '✅ Raqamingiz saqlandi! Endi saytda raqamingizni kiritib, kod so\'rang.',
+              reply_markup: { remove_keyboard: true }
+            });
+          }
         } else {
           await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             chat_id: chatId,
-            text: '✅ Raqamingiz saqlandi! Endi saytda raqamingizni kiritib, kod so\'rang.',
-            reply_markup: { remove_keyboard: true }
+            text: `⚠️ *Diqqat!* Siz hali kanalimizga a'zo emassiz.\n\nKodni olish uchun avval quyidagi kanalga obuna bo'ling:\n${settings.channelLink || 'https://t.me/+5AuXHINaqNBjZjM6'}\n\nObuna bo'lgach, qaytadan telefon raqamingizni ulashing:`,
+            parse_mode: 'Markdown',
+            reply_markup: {
+              keyboard: [[{ text: '📱 Telefon raqamimni ulashish', request_contact: true }]],
+              resize_keyboard: true,
+              one_time_keyboard: true
+            }
           });
         }
       } else {
@@ -624,6 +654,7 @@ ${locationLink}
         primaryColor: '#0ea5e9',
         botToken: '8585258425:AAHUGMT0RQKS-pU8N8n8v2KsaBs070Mt4NQ',
         channelId: '-1003728376282',
+        channelLink: 'https://t.me/+5AuXHINaqNBjZjM6',
         adminChatId: '6986959848',
         holidayMode: 'none',
         holidayText: ''
@@ -743,5 +774,46 @@ ${locationLink}
 
   async findAllBookings(): Promise<Booking[]> {
     return this.bookingRepository.find({ order: { createdAt: 'DESC' } });
+  }
+
+  async checkSubscription(phone: string): Promise<{ isSubscribed: boolean }> {
+    const user = await this.userRepository.findOne({ where: { phone } });
+    if (!user || !user.chatId) return { isSubscribed: false };
+
+    try {
+      const settings = await this.getSettings();
+      const response = await axios.get(`https://api.telegram.org/bot${settings.botToken}/getChatMember`, {
+        params: {
+          chat_id: settings.channelId,
+          user_id: user.chatId
+        }
+      });
+
+      const status = response.data.result?.status;
+      const isSubscribed = ['member', 'administrator', 'creator'].includes(status);
+
+      user.isSubscribed = isSubscribed;
+      user.lastSubscribedCheck = new Date();
+      await this.userRepository.save(user);
+
+      return { isSubscribed };
+    } catch (e) {
+      console.error('Subscription check error:', e.message);
+      return { isSubscribed: user.isSubscribed }; 
+    }
+  }
+
+  @Cron('0 */30 * * * *') // Every 30 minutes
+  async cleanupUnsubscribedSellers() {
+    const users = await this.userRepository.find({ where: { role: 'seller', isSubscribed: true } });
+    for (const user of users) {
+      const { isSubscribed } = await this.checkSubscription(user.phone);
+      if (!isSubscribed) {
+        // If they unsubscribed, hide or delete their dachas
+        // For now, let's just delete to match user request "dachasiham uchib ketishi kerak"
+        await this.dachaRepository.delete({ phone: user.phone });
+        console.log(`User ${user.phone} unsubscribed. Deleted their dachas.`);
+      }
+    }
   }
 }

@@ -164,6 +164,31 @@ function ViewDachas() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data } = await api.get('/api/dachalar/settings');
+        setSettings(data);
+      } catch (e) {}
+    };
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    const checkSub = async () => {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.phone && selectedDacha) {
+        try {
+          const { data } = await api.get(`/api/dachalar/auth/check-subscription?phone=${user.phone}`);
+          setIsSubscribed(data.isSubscribed);
+        } catch (e) {}
+      }
+    };
+    checkSub();
+  }, [selectedDacha]);
 
   useEffect(() => {
     const fetchDachalar = async () => {
@@ -512,7 +537,61 @@ function ViewDachas() {
 
               return (
               <div style={{ background: '#f0fdf4', padding: '25px', borderRadius: '20px', marginTop: '30px', border: '2px solid var(--success)' }}>
-                <h3 style={{ color: 'var(--success)', marginBottom: '15px' }}>Jami narx: {totalPrice}$</h3>
+                
+                {/* Discount Banner */}
+                <div style={{ 
+                  background: isSubscribed ? '#f0fdf4' : '#fff7ed', 
+                  border: isSubscribed ? '1px solid #22c55e' : '1px solid #f97316',
+                  borderRadius: '15px', 
+                  padding: '15px', 
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '15px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ background: isSubscribed ? '#22c55e' : '#f97316', color: 'white', width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isSubscribed ? '✅' : '🎁'}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: '800', fontSize: '0.9rem', color: isSubscribed ? '#15803d' : '#9a3412' }}>
+                        {isSubscribed ? 'Obuna chegirmasi qo\'llanildi!' : 'Kanalga obuna bo\'ling va 20$ chegirma oling!'}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: isSubscribed ? '#166534' : '#c2410c' }}>
+                        {isSubscribed ? 'Siz kanalimiz a\'zosisiz. Rahmat!' : 'Obuna bo\'lgach "Tekshirish" tugmasini bosing.'}
+                      </div>
+                    </div>
+                  </div>
+                  {!isSubscribed ? (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <a href={settings?.channelLink || 'https://t.me/+5AuXHINaqNBjZjM6'} target="_blank" rel="noreferrer" style={{ background: '#f97316', color: 'white', padding: '8px 12px', borderRadius: '10px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: '700' }}>Obuna bo'lish</a>
+                      <button 
+                        onClick={async () => {
+                          const user = JSON.parse(localStorage.getItem('user') || '{}');
+                          if (user.phone) {
+                            const { data } = await api.get(`/api/dachalar/auth/check-subscription?phone=${user.phone}`);
+                            setIsSubscribed(data.isSubscribed);
+                            if (data.isSubscribed) toast.success('Chegirma qo\'llanildi!');
+                            else toast.error('Hali obuna bo\'lmabsiz!');
+                          } else {
+                            toast.error('Avval tizimga kiring!');
+                          }
+                        }}
+                        style={{ background: 'white', border: '1px solid #f97316', color: '#f97316', padding: '8px 12px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
+                      >
+                        Tekshirish
+                      </button>
+                    </div>
+                  ) : (
+                     <div style={{ fontWeight: '900', color: '#22c55e', fontSize: '1.2rem' }}>-20$</div>
+                  )}
+                </div>
+
+                <h3 style={{ color: 'var(--success)', marginBottom: '15px' }}>
+                  Jami narx: {isSubscribed ? Math.max(0, totalPrice - 20) : totalPrice}$
+                  {isSubscribed && <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '1rem', marginLeft: '10px' }}>{totalPrice}$</span>}
+                </h3>
                 
                 <div style={{ background: 'white', padding: '15px', borderRadius: '15px', marginBottom: '15px', border: '1px solid #dcfce7' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontWeight: '700', color: '#475569' }}>
@@ -539,7 +618,7 @@ function ViewDachas() {
                     customerName: customerName,
                     customerPhone: user.phone || 'Noma`lum',
                     bookedDays: selectedDays,
-                    totalPrice: totalPrice,
+                    totalPrice: isSubscribed ? Math.max(0, totalPrice - 20) : totalPrice,
                     checkIn: checkInText,
                     checkOut: checkOutText
                   };
@@ -550,7 +629,8 @@ function ViewDachas() {
                     console.error('Failed to save booking:', e);
                   }
 
-                  const text = `🏠 Dacha: ${selectedDacha.dachaName}\n📅 Kunlar: ${selectedDays.join(', ')}\n\n🟢 ${checkInText}\n🔴 ${checkOutText}\n\n💰 Jami: ${totalPrice}$\n👤 Mijoz: ${customerName}`;
+                  const finalPrice = isSubscribed ? Math.max(0, totalPrice - 20) : totalPrice;
+                  const text = `🏠 Dacha: ${selectedDacha.dachaName}\n📅 Kunlar: ${selectedDays.join(', ')}\n\n🟢 ${checkInText}\n🔴 ${checkOutText}\n\n💰 Jami: ${finalPrice}$\n👤 Mijoz: ${customerName}`;
                   window.open(`https://t.me/+${selectedDacha.phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
                 }} className="btn-primary" style={{ width: '100%', marginTop: '15px', background: 'var(--success)' }}>📩 Band qilish</button>
               </div>

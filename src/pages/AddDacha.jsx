@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import toast from 'react-hot-toast';
-import { User, Camera, Calendar as CalendarIcon, Save } from 'lucide-react';
+import { User, Camera, Calendar as CalendarIcon, Save, CheckCircle2, Info } from 'lucide-react';
 import OwnerForm from '../components/OwnerForm';
 import PhotoUpload from '../components/PhotoUpload';
 import Calendar from '../components/Calendar';
@@ -23,6 +23,18 @@ function AddDacha() {
   const [photos, setPhotos] = useState([]);
   const [calendarData, setCalendarData] = useState({});
   const [amenitiesData, setAmenitiesData] = useState({});
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [settings, setSettings] = useState(null);
+
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data } = await api.get('/api/dachalar/settings');
+        setSettings(data);
+      } catch (e) {}
+    };
+    fetchSettings();
+  }, []);
 
   React.useEffect(() => {
     if (!user) {
@@ -59,7 +71,6 @@ function AddDacha() {
     const savePromise = new Promise(async (resolve, reject) => {
       try {
         const newDacha = {
-          id: Date.now().toString(),
           owner: ownerData,
           photos: photos,
           calendar: calendarData,

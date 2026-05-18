@@ -23,6 +23,9 @@ export class Settings {
   @Column({ default: '-1003728376282' })
   channelId: string;
 
+  @Column({ default: 'https://t.me/+5AuXHINaqNBjZjM6' })
+  channelLink: string;
+
   @Column({ default: '6986959848' })
   adminChatId: string;
 

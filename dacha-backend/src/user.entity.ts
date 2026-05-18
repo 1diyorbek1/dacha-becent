@@ -31,4 +31,10 @@ export class User {
 
   @Column({ type: 'text', nullable: true })
   storyUrl: string | null;
+
+  @Column({ default: false })
+  isSubscribed: boolean;
+
+  @Column({ type: 'datetime', nullable: true })
+  lastSubscribedCheck: Date | null;
 }

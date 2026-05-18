@@ -7,8 +7,17 @@ import * as bodyParser from 'body-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enable CORS for frontend connection
-  app.enableCors();
+  // Enable CORS with explicit origins
+  app.enableCors({
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://kelp-unused-senior.ngrok-free.dev',
+      'https://dachatour-becent.vercel.app',
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
   
   // Set limit for large base64 images
   app.use(bodyParser.json({ limit: '100mb' }));
